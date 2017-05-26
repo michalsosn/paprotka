@@ -14,9 +14,16 @@ def find_ext_modules(root='.', extension="", dir_prefix='.'):
     expression = '{}/**/*.{}'.format(root, extension)
     return [Extension(file_into_package(file), [file]) for file in iglob(expression)]
 
+
+LEARN_REQUIRES = ['numpy', 'scipy', 'scikit-learn', 'hmmlearn']
+VISUALIZATION_REQUIRES = ['matplotlib', 'ipywidgets']
+SYSTEM_REQUIRES = ['pyaudio']
+INSTALL_REQUIRES = LEARN_REQUIRES + VISUALIZATION_REQUIRES + SYSTEM_REQUIRES
+
 setup(
     packages=find_packages(exclude=['tests/*']),
     ext_modules=find_ext_modules('paprotka', 'pyx'),
+    install_requires=INSTALL_REQUIRES,
     setup_requires=['setuptools>=18.0', 'Cython', 'pytest-runner'],
     tests_require=['pytest']
 )
