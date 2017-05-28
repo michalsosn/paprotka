@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class MyGaussianNB:
+class GaussianNB:
     classes = None
     priors = None
     means = None

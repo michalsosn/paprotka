@@ -60,10 +60,15 @@ def filter_correct_sentence(trials):
     return filter_trials(trials, correct_sentence)
 
 
-def group_same_sentence(enrollments, trials):
-    e_people, triples = enrollments
-    t_people, pcm_paths, truths = trials
+def filter_correct_speaker(trials):
+    _, _, truths = trials
+    correct_sentence = truths[:, [0, 1]].any(axis=1)
+    return filter_trials(trials, correct_sentence)
 
+
+def group_same_sentence(enrollments, trials):
+    e_people = enrollments[0]
+    t_people = trials[0]
     e_sentence_codes = np.array([person.rsplit('_', 1)[1] for person in e_people])
     t_sentence_codes = np.array([person.rsplit('_', 1)[1] for person in t_people])
 
