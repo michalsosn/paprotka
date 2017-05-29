@@ -15,7 +15,7 @@ def find_ext_modules(root='.', extension="", dir_prefix='.'):
     return [Extension(file_into_package(file), [file]) for file in iglob(expression)]
 
 
-LEARN_REQUIRES = ['numpy', 'scipy', 'scikit-learn', 'hmmlearn', 'fastdtw']
+LEARN_REQUIRES = ['numpy', 'scipy', 'scikit-learn', 'fastdtw', 'hmmlearn']
 VISUALIZATION_REQUIRES = ['matplotlib', 'ipywidgets']
 SYSTEM_REQUIRES = ['pyaudio']
 INSTALL_REQUIRES = LEARN_REQUIRES + VISUALIZATION_REQUIRES + SYSTEM_REQUIRES
