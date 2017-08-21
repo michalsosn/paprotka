@@ -12,9 +12,9 @@ def calculate_dtw(metric, pattern, sequence):
         sequence_size, pattern_size = pattern_size, sequence_size
         sequence, pattern = pattern, sequence
 
-    prev_row = np.zeros(pattern_size + 1, dtype=np.float64)
+    prev_row = np.full(pattern_size + 1, math.inf, dtype=np.float64)
     prev_row[0] = 0
-    current_row = np.full(pattern_size + 1, math.inf, dtype=np.float64)
+    current_row = np.zeros(pattern_size + 1, dtype=np.float64)
     current_row[0] = math.inf
 
     for i, sequence_window in enumerate(sequence):

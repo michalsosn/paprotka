@@ -32,7 +32,8 @@ def record_sound(seconds, dtype=np.int16, channels=1, rate=44100, chunk_size=102
 
     parts = []
     for i in range(0, rate * seconds, chunk_size):
-        part = np.frombuffer(stream.read(chunk_size), dtype=dtype)
+        part_bytes = stream.read(chunk_size, exception_on_overflow=False)
+        part = np.frombuffer(part_bytes, dtype=dtype)
         parts.append(part)
 
     stream.stop_stream()
