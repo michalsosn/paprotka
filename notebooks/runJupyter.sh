@@ -1,6 +1,11 @@
-#!/bin/sh
+#!/bin/bash
+
+set -e
 
 virtualenv venv
-./venv/bin/pip3 install --no-cache-dir -e .. 
-./venv/bin/pip3 install --no-cache-dir jupyter
-./venv/bin/jupyter notebook "$@"
+source venv/bin/activate
+pip3 install --no-cache-dir glob2 Cython
+pip3 install --no-cache-dir -e ..
+jupyter nbextension install --py --user widgetsnbextension
+jupyter nbextension enable --py widgetsnbextension
+jupyter notebook "$@"

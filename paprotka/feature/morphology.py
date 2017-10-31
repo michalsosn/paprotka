@@ -10,10 +10,10 @@ def erode_image(image, by=1):
     for _ in range(by):
         image = new_image
         new_image = image.copy()
-        new_image[1:,:] = np.minimum(new_image[1:,:], image[:-1,:])
-        new_image[:-1,:] = np.minimum(new_image[:-1,:], image[1:,:])
-        new_image[:,1:] = np.minimum(new_image[:,1:], image[:,:-1])
-        new_image[:,:-1] = np.minimum(new_image[:,:-1], image[:,1:])
+        new_image[1:, :] = np.minimum(new_image[1:, :],  image[:-1, :])
+        new_image[:-1, :] = np.minimum(new_image[:-1, :],  image[1:, :])
+        new_image[:, 1:] = np.minimum(new_image[:, 1:],  image[:, :-1])
+        new_image[:, :-1] = np.minimum(new_image[:, :-1],  image[:, 1:])
     return new_image
 
 
@@ -22,10 +22,10 @@ def dilate_image(image, by=1):
     for _ in range(by):
         image = new_image
         new_image = image.copy()
-        new_image[1:,:] = np.maximum(new_image[1:,:], image[:-1,:])
-        new_image[:-1,:] = np.maximum(new_image[:-1,:], image[1:,:])
-        new_image[:,1:] = np.maximum(new_image[:,1:], image[:,:-1])
-        new_image[:,:-1] = np.maximum(new_image[:,:-1], image[:,1:])
+        new_image[1:, :] = np.maximum(new_image[1:, :],  image[:-1, :])
+        new_image[:-1, :] = np.maximum(new_image[:-1, :],  image[1:, :])
+        new_image[:, 1:] = np.maximum(new_image[:, 1:],  image[:, :-1])
+        new_image[:, :-1] = np.maximum(new_image[:, :-1],  image[:, 1:])
     return new_image
 
 

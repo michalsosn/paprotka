@@ -1,3 +1,4 @@
+import functools as ft
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
@@ -5,6 +6,7 @@ from sklearn import metrics
 
 
 def wrap_display(display):
+    @ft.wraps(display)
     def wrapped(data, title=None, root=None, show=True, *args, **kwargs):
         if root is None:
             fig, root = plt.subplots()
@@ -75,3 +77,14 @@ def row_map(func, matrix, cols=(), dtype=np.float64):
     for i, row in enumerate(matrix):
         result[i] = func(row)
     return result
+
+
+__all__ = [
+    'display_image',
+    'display_sound',
+    'display_spectrogram',
+    'display_covariance',
+    'display_confusion',
+    'row_map'
+]
+

@@ -1,0 +1,20 @@
+= Paprotka
+
+This is a module for my own use where I put some things I implemented while studying.
+
+I usually use Jupyter to run examples. paprotka modules are for
+library-like functions to be used in jupyter. To run jupyter, use
+the script `runJupyter.sh`. It will automatically install `paprotka` in
+editable/develop mode, meaning the changes in paprotka will be visible in jupyter
+scripts. You might need to also enable autoreload in notebook
+
+----
+%load_ext autoreload
+# %autoreload 2
+----
+
+To build the project `./setup.py build`
+
+To run tests `./setup.py test` (uses pytest)
+
+To clean the build './setup.py clean --all'

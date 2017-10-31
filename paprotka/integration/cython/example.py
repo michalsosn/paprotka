@@ -1,4 +1,4 @@
-import paprotka.sub.faster as faster
+from paprotka.integration.cython import faster
 
 
 def foo(a, b):
