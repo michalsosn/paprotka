@@ -17,4 +17,4 @@ To build the project `./setup.py build`
 
 To run tests `./setup.py test` (uses pytest)
 
-To clean the build './setup.py clean --all'
+To clean the build `./setup.py clean --all`
