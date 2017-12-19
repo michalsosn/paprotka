@@ -1,83 +1,147 @@
+import json
+import re
 import os
+
 import numpy as np
+import pandas as pd
 import paprotka.io as pio
 
 
-def read_paths(read_file, *paths):
+def get_root(config='paths.json'):
+    with open(config) as opened:
+        paths = json.load(opened)
+    return paths['reddots_root']
+
+
+def read_files(*paths, encoding='utf-8'):
     for path in paths:
-        with open(path) as opened:
-            read_file(opened)
+        with open(path, encoding=encoding) as opened:
+            yield from opened
 
 
-def load_enrollments(*paths):
-    people, pcm_triples = [], []
+recording_regex = re.compile(r'([mf])(\d+)/(\d+)_[mf]\d+_(\d+)')
+def parse_recording(value):
+    match = recording_regex.match(value)
+    if match:
+        return match.groups()
 
-    def read_file(opened):
-        for line in opened.readlines():
-            person, pcm_paths = line.strip().split(' ', 1)
-            pcm_triple = pcm_paths.split(',')
-            people.append(person)
-            pcm_triples.append(pcm_triple)
 
-    read_paths(read_file, *paths)
-    return np.array(people), np.array(pcm_triples)
+speaker_sentence_regex = re.compile(r'([mf])(\d+)_(\d+)')
+def parse_speaker_sentence(value):
+    match = speaker_sentence_regex.match(value)
+    if match:
+        return match.groups()
+
+
+timestamp_format='%Y%m%d%H%M%S%f'
+def parse_timestamp(timestamp):
+    return pd.to_datetime(timestamp, format=timestamp_format)
+
+
+def parse_gender(flag):
+    return flag == 'm'
+
+
+def parse_flag(flag):
+    return flag == 'Y'
 
 
 def load_trials(*paths):
-    people, pcm_paths, truths = [], [], []
+    columns = ([], [], [], [], [], [], [], [], [], [])
+    
+    for line in read_files(*paths):
+        speaker_sentence, recording, tc, tw, ic, iw = line.strip().split(',')
+        
+        expected_gender, expected_speaker_id, expected_sentence_id = parse_speaker_sentence(speaker_sentence)
+        trial_gender, trial_speaker_id, trial_timestamp, trial_sentence_id = parse_recording(recording)
+        
+        expected_is_male = parse_gender(expected_gender)
+        trial_is_male = parse_gender(trial_gender)
+        
+        target_person = parse_flag(tc) or parse_flag(tw)
+        correct_sentence = parse_flag(tc) or parse_flag(ic)
+        
+        trial_timestamp = parse_timestamp(trial_timestamp)
+        pcm_path = recording + '.pcm'
+        
+        record = (expected_is_male, expected_speaker_id, expected_sentence_id, 
+                  trial_is_male, trial_speaker_id, trial_timestamp, trial_sentence_id,
+                  pcm_path, target_person, correct_sentence)
+        
+        for value, column in zip(record, columns):
+            column.append(value)
+        
+    data = {'expected_is_male':     pd.Series(columns[0], dtype=np.bool), 
+            'expected_speaker_id':  pd.Series(columns[1], dtype=np.int16), 
+            'expected_sentence_id': pd.Series(columns[2], dtype=np.int16), 
+            'trial_is_male':        pd.Series(columns[3], dtype=np.bool), 
+            'trial_speaker_id':     pd.Series(columns[4], dtype=np.int16), 
+            'trial_timestamp':      pd.Series(columns[5], dtype='datetime64[ns]'), 
+            'trial_sentence_id':    pd.Series(columns[6], dtype=np.int16),
+            'pcm_path':             pd.Series(columns[7], dtype=str), 
+            'target_person':        pd.Series(columns[8], dtype=np.bool), 
+            'correct_sentence':     pd.Series(columns[9], dtype=np.bool)}
+    return pd.DataFrame.from_dict(data)
+        
 
-    def read_file(opened):
-        for line in opened.readlines():
-            person, pcm_path, *targets = line.strip().split(',')
-            truth_row = [target == 'Y' for target in targets]
-            # same prsn + same sent / same prsn + diff sent / diff prsn + same sent / diff prsn diff sent
-            people.append(person)
-            pcm_paths.append(pcm_path)
-            truths.append(truth_row)
+def load_enrollments(*paths):
+    columns = ([], [], [], [], [])
 
-    read_paths(read_file, *paths)
-    return np.array(people), np.array(pcm_paths), np.array(truths, dtype=np.bool)
+    for line in read_files(*paths):
+        speaker_sentence, recordings = line.strip().split(' ', 1)
+        for recording in recordings.split(','):
+            gender, speaker_id, timestamp, sentence_id = parse_recording(recording)
+            
+            is_male = parse_gender(gender)
+            timestamp = parse_timestamp(timestamp)
+            pcm_path = recording + '.pcm'
+            
+            record = (is_male, speaker_id, timestamp, sentence_id, pcm_path)
+
+            for value, column in zip(record, columns):
+                column.append(value)
+
+    data = {'is_male':     pd.Series(columns[0], dtype=np.bool), 
+            'speaker_id':  pd.Series(columns[1], dtype=np.int16), 
+            'timestamp':   pd.Series(columns[2], dtype='datetime64[ns]'), 
+            'sentence_id': pd.Series(columns[3], dtype=np.int16),
+            'pcm_path':    pd.Series(columns[4], dtype=str)}
+    return pd.DataFrame.from_dict(data)
 
 
 def load_pcm(root, path):
-    full_path = os.path.join(root, '{}.pcm'.format(path))
+    full_path = os.path.join(root, 'pcm', path)
+    return np.fromfile(full_path, np.int16)
+
+
+def load_pcm_snd(root, path):
+    full_path = os.path.join(root, 'pcm', path)
     return pio.load_pcm(full_path, dtype=np.int16, rate=16000)
 
 
-def filter_trials(trials, booleans):
-    people, pcm_paths, truths = trials
-    return people[booleans], pcm_paths[booleans], truths[booleans]
+def load_npy(root, source, path):
+    full_path = os.path.join(root, source, path)
+    return np.load(full_path)
 
 
-def filter_enrollments(enrollments, booleans):
-    people, path_triples = enrollments
-    return people[booleans], path_triples[booleans]
+def transform_all_recordings(root, source, target, function):
+    for person_dir in os.listdir(os.path.join(root, source)):
+        source_dir = os.path.join(root, source, person_dir)
+        target_dir = os.path.join(root, target, person_dir)
+        
+        os.makedirs(target_dir)
+        for source_file in os.listdir(source_dir):
+            target_file = source_file if source != 'pcm' else source_file[:-3] + 'npy'
+            
+            source_path = os.path.join(source_dir, source_file)
+            target_path = os.path.join(target_dir, source_file)
+            
+            if source == 'pcm':
+                source_data = np.fromfile(source_path, np.int16)
+            else: 
+                source_data = np.load(source_path)
+                
+            result = function(source_data)
+            
+            np.save(target_path, result)
 
-
-def filter_correct_sentence(trials):
-    _, _, truths = trials
-    correct_sentence = truths[:, [0, 2]].any(axis=1)
-    return filter_trials(trials, correct_sentence)
-
-
-def filter_correct_speaker(trials):
-    _, _, truths = trials
-    correct_sentence = truths[:, [0, 1]].any(axis=1)
-    return filter_trials(trials, correct_sentence)
-
-
-def group_same_sentence(enrollments, trials):
-    e_people = enrollments[0]
-    t_people = trials[0]
-    e_sentence_codes = np.array([person.rsplit('_', 1)[1] for person in e_people])
-    t_sentence_codes = np.array([person.rsplit('_', 1)[1] for person in t_people])
-
-    all_sentence_codes = np.hstack((e_sentence_codes, t_sentence_codes))
-    unique_codes = np.unique(all_sentence_codes)
-
-    def make_group(code):
-        filtered_enrollments = filter_enrollments(enrollments, e_sentence_codes == code)
-        filtered_trials = filter_trials(trials, t_sentence_codes == code)
-        return filtered_enrollments, filtered_trials
-
-    return {int(code): make_group(code) for code in unique_codes}
