@@ -120,7 +120,7 @@ def load_pcm_snd(root, path):
 
 
 def load_npy(root, source, path):
-    full_path = os.path.join(root, source, path)
+    full_path = os.path.join(root, source, path + '.npy')
     return np.load(full_path)
 
 
