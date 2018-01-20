@@ -26,6 +26,13 @@ def parse_recording(value):
         return match.groups()
 
 
+recording_nopath_regex = re.compile(r'(\d+)_([mf])(\d+)_(\d+)')
+def parse_recording_nopath(value):
+    match = recording_nopath_regex.match(value)
+    if match:
+        return match.groups()
+
+
 speaker_sentence_regex = re.compile(r'([mf])(\d+)_(\d+)')
 def parse_speaker_sentence(value):
     match = speaker_sentence_regex.match(value)
@@ -107,6 +114,24 @@ def load_enrollments(*paths):
             'sentence_id': pd.Series(columns[3], dtype=np.int16),
             'pcm_path':    pd.Series(columns[4], dtype=str)}
     return pd.DataFrame.from_dict(data)
+
+
+def load_script(path):
+    sentence_ids_to_contents = {}
+    
+    for line in read_files(path, encoding='latin1'):
+        recording_nopath, content = line.strip().split(';')
+        _, _, _, sentence_id = parse_recording_nopath(recording_nopath)
+        if sentence_id not in sentence_ids_to_contents:
+            sentence_ids_to_contents[sentence_id] = content
+            
+    sentence_ids, contents = list(zip(*sentence_ids_to_contents.items()))
+    
+    data = {'sentence_id': pd.Series(sentence_ids, dtype=np.int16),
+            'content':     pd.Series(contents, dtype=str)}
+    df = pd.DataFrame.from_dict(data)
+    df.set_index('sentence_id', inplace=True)
+    return df
 
 
 def load_pcm(root, path):
